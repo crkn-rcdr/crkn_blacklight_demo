@@ -95,7 +95,7 @@ Ensure docker and docker compose are installed. Then, enter the directory in you
 # Deployment Instructions
 Run the following to push the image to docker hub:
 
-`docker tag crkn_canadiana_blacklight-web brilap/crkn-demo`
+`docker tag crkn_blacklight_demo-web-1 brilap/crkn-demo`
 
 `docker push brilap/crkn-demo`
 
