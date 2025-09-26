@@ -22,17 +22,17 @@ Connect to the solr vm:
 
 `ssh -i ~/.ssh/<id file>.pem <user>@4.229.225.26`
 
-Created the blacklight_marc core config directory:
+Created the blacklight_marc_demo core config directory:
 
-`sudo mkdir /opt/bitnami/solr/server/solr/blacklight_marc &&sudo mkdir /opt/bitnami/solr/server/solr/blacklight_marc/conf`
+`sudo mkdir /opt/bitnami/solr/server/solr/blacklight_marc_demo &&sudo mkdir /opt/bitnami/solr/server/solr/blacklight_marc_demo/conf`
 
 Copied the default configs to my new core:
 
-`sudo cp -r /opt/bitnami/solr/server/solr/configsets/_default/conf/* /opt/bitnami/solr/server/solr/blacklight_marc/conf/`
+`sudo cp -r /opt/bitnami/solr/server/solr/configsets/_default/conf/* /opt/bitnami/solr/server/solr/blacklight_marc_demo/conf/`
 
 Went into the new core's config directory:
 
-`cd /opt/bitnami/solr/server/solr/blacklight_marc/conf/`
+`cd /opt/bitnami/solr/server/solr/blacklight_marc_demo/conf/`
 
 Removed the default solr config:
 
@@ -95,9 +95,9 @@ Ensure docker and docker compose are installed. Then, enter the directory in you
 # Deployment Instructions
 Run the following to push the image to docker hub:
 
-`docker tag crkn_canadiana_blacklight-web brilap/crkn`
+`docker tag crkn_canadiana_blacklight-web brilap/crkn-demo`
 
-`docker push brilap/crkn`
+`docker push brilap/crkn-demo`
 
 Then restart the web app on [Azure](https://portal.azure.com/#@crkn.ca/resource/subscriptions/1bf1b056-be1d-4b1c-991f-2f154caf3061/resourceGroups/CRKN-demo-test/providers/Microsoft.Web/sites/canadiana-beta/appServices) to pull the new docker image.
 
@@ -112,8 +112,8 @@ To index a marc record from the terminal, you can enter the container on Docker 
 
 A quick command to clear the solr index is:
 
-`curl -X POST -H 'Content-Type: application/json' 'http://username:password@host/solr/blacklight_marc/update?commit=true' -d '{ "delete": {"query":"*:*"} }'`
-`curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/blacklight_marc/update?commit=true' -d '{ "delete": {"query":"*:*"} }'`
+`curl -X POST -H 'Content-Type: application/json' 'http://username:password@host/solr/blacklight_marc_demo/update?commit=true' -d '{ "delete": {"query":"*:*"} }'`
+`curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/blacklight_marc_demo/update?commit=true' -d '{ "delete": {"query":"*:*"} }'`
 
 I ran these commands and saved the app directory as a mapped volume, so you shouldn't have to:
 
