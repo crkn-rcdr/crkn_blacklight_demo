@@ -3,11 +3,11 @@
     <%= @facet_field.label %>
   <% end %>
   <% component.with_body do %>
+    <%= render(Blacklight::FacetFieldInclusiveConstraintComponent.new(facet_field: @facet_field)) %>
     <% if tree.present? %>
-      <div class="text-muted small">lang=<%= language %></div>
-      <ul class="facet-hierarchy" role="tree">
-        <% tree.keys.collect do |key| %>
-          <%= render Blacklight::Hierarchy::FacetFieldComponent.new(field_name: @facet_field.facet_field.field, tree: tree[key], key: key) %>
+      <ul class="facet-values list-unstyled facet-hierarchy" role="tree">
+        <% tree.keys.each do |key| %>
+          <%= render CollectionsHierarchyComponent::NodeComponent.new(field_name: @facet_field.facet_field.field, tree: tree[key], key: key) %>
         <% end %>
       </ul>
     <% end %>

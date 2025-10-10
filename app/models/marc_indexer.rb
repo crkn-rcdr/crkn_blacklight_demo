@@ -33,22 +33,30 @@ class MarcIndexer < Blacklight::Marc::Indexer
       key = record["902"]&.subfields&.find { |sf| sf.code == 'b' }&.value&.strip
       if key && !key.empty?
         acc.replace [key]
-      else
-        id = record["001"]&.value
-        acc.replace( id && id.include?('_') ? [id.split('_', 2).first] : [] )
       end
     end
 
     # --- serial_title: nil-safe split on ':' ---
-    to_field "serial_title", extract_marc('245a'), first_only do |rec, acc|
+    to_field "serial_title", extract_marc('245a'), first_only do |_rec, acc|
       v = acc.first
-      acc.replace(v && v.include?(':') ? [v.split(':', 2).first] : [])
+      if v && v.include?(' : ')
+        acc.replace([v.split(' : ', 2).first.strip])
+      elsif v && v.include?(':')
+        acc.replace([v.split(':', 2).first.strip])
+      else
+        acc.replace(v ? [v.strip] : [])
+      end
     end
 
-    # --- is_serial from 902$a "Is part of" (not 901) ---
+    # --- is_serial: true for parent serials, not individual issues ---
     to_field "is_serial" do |record, acc|
+      is_issue = record["901"]&.value&.strip&.casecmp("Is issue")&.zero?
       v = record["902"]&.subfields&.find { |sf| sf.code == 'a' }&.value&.strip
-      acc.replace [(v&.casecmp("Is part of")&.zero?) ? "Yes" : "No"]
+      if is_issue
+        acc.replace ["No"]
+      else
+        acc.replace [(v&.casecmp("Is part of")&.zero?) ? "Yes" : "No"]
+      end
     end
 
     to_field 'marc_ss', get_xml
@@ -198,7 +206,7 @@ class MarcIndexer < Blacklight::Marc::Indexer
       end
     end
 
-    # Blacklight-hierarchy: single delimited field with permutations (A, A:B)
+    # Blacklight-hierarchy: single delimited field with permutations (A, A|B)
     to_field 'collection_hierarchy_ssim' do |rec, acc|
       # for each pair of 999 "a|b" where first is EN and second is FR
       # build hierarchical strings with pipe delimiter `|`

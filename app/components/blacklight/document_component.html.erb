@@ -17,9 +17,28 @@
       <br/>
 
       <% if @component.to_s == 'div' %>
-        
+        <% breadcrumb_paths = helpers.collection_breadcrumb_paths(@document) %>
+        <% if breadcrumb_paths.present? %>
+          <nav class="collection-breadcrumbs mb-3" aria-label="<%= t('breadcrumbs.collections', default: 'Collections') %>">
+            <% breadcrumb_paths.each do |path| %>
+              <ol class="breadcrumb mb-1">
+                <% path.each_with_index do |segment, idx| %>
+                  <% active = (idx == path.length - 1) %>
+                  <li class="breadcrumb-item <%= 'active' if active %>" <%= 'aria-current="page"' if active %>>
+                    <% if active %>
+                      <span><%= segment[:label] %></span>
+                    <% else %>
+                      <%= link_to segment[:label], helpers.collection_breadcrumb_url(segment[:value]) %>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ol>
+            <% end %>
+          </nav>
+        <% end %>
         <br/>
       <% end %>
+
 
       <%= title %>
       <%= embed %>

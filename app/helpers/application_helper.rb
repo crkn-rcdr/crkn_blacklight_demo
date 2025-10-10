@@ -60,4 +60,53 @@ module ApplicationHelper
   rescue
     args[:document][args[:field]].to_s # Fallback to original if parsing fails
   end
+
+  # Build language-aware collection breadcrumbs from hierarchy facet values.
+  def collection_breadcrumb_paths(document)
+    values = Array(document['collection_hierarchy_ssim']).compact
+    return [] if values.empty?
+
+    lang = current_ui_language_code
+    preferred = values.select { |val| hierarchy_value_language(val) == lang }
+    preferred = values if preferred.empty?
+
+    preferred.map do |value|
+      parts = value.split('|')
+      parts.each_index.map do |idx|
+        raw_segment = parts[idx]
+        label = idx.zero? ? CollectionsHierarchyComponent.strip_language_prefix(parts.first) : raw_segment
+        { label: label.to_s.strip, value: parts[0..idx].join('|') }
+      end
+    end
+  end
+
+  def collection_breadcrumb_url(facet_value)
+    params_hash = { 'f[collection_hierarchy_ssim][]' => facet_value }
+    lang = current_ui_language_param
+    params_hash[:lang] = lang if lang.present?
+    search_action_path(params_hash)
+  end
+
+  def current_ui_language_param
+    if respond_to?(:content_lang)
+      val = content_lang
+      return val if val.present?
+    end
+    return params[:lang] if params[:lang].present?
+
+    I18n.locale.to_s
+  end
+
+  def current_ui_language_code
+    current_ui_language_param.to_s.start_with?('fr') ? 'fr' : 'en'
+  end
+
+  def hierarchy_value_language(value)
+    first = value.to_s.split('|').first
+    return nil unless first
+
+    stripped = first.sub(/\A[\p{Cf}\s]+/, '')
+    match = stripped.match(/\A(fr|en)/i)
+    match && match[1].downcase
+  end
 end
