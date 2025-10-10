@@ -17,15 +17,7 @@
       <br/>
 
       <% if @component.to_s == 'div' %>
-        <div class="crumbs">
-          <a href="/catalog"><%= t('labels.L_SEARCH_BREADCRUMB') %></a> <span>/</span>
-          <% @document._source["collection_tsim"].each do |val| %>
-            <a href="/catalog?f%5Bcollection_tsim_str%5D%5B%5D=<%= val %>"><%= val %></a> /
-          <% end %>
-          <% if @document._source['is_issue']&.first == "Yes" && @document._source['serial_title'] %>
-            <a href="/catalog/<%= @document._source['serial_key'][0] %>"><%= @document._source['serial_title'][0] %></a> /
-          <% end %>
-        </div>
+        
         <br/>
       <% end %>
 
