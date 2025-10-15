@@ -24,12 +24,10 @@
               <ol class="breadcrumb mb-1">
                 <% path.each_with_index do |segment, idx| %>
                   <% active = (idx == path.length - 1) %>
-                  <li class="breadcrumb-item <%= 'active' if active %>" <%= 'aria-current="page"' if active %>>
-                    <% if active %>
-                      <span><%= segment[:label] %></span>
-                    <% else %>
-                      <%= link_to segment[:label], helpers.collection_breadcrumb_url(segment[:value], segment[:field]) %>
-                    <% end %>
+                  <li class="breadcrumb-item <%= 'active' if active %>">
+                    <%= link_to segment[:label],
+                                helpers.collection_breadcrumb_url(segment[:value], segment[:field]),
+                                aria: (active ? { current: 'page' } : {}) %>
                   </li>
                 <% end %>
               </ol>

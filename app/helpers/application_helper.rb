@@ -70,7 +70,7 @@ module ApplicationHelper
     field, values = collection_hierarchy_values(document)
     return [] if values.blank?
 
-    values.filter_map do |value|
+    paths = values.filter_map do |value|
       parts = value.to_s.split('/').map { |part| part.to_s.strip }.reject(&:blank?)
       next if parts.empty?
 
@@ -78,6 +78,20 @@ module ApplicationHelper
         { label: parts[idx], value: parts[0..idx].join('/'), field: field }
       end
     end
+
+    return [] if paths.blank?
+
+    # Drop any path that is a strict prefix of a longer one so we only show the
+    # deepest breadcrumb for each hierarchy branch.
+    filtered = paths.reject do |path|
+      paths.any? do |other|
+        next if path.equal?(other) || path == other
+        path.length < other.length &&
+          path.each_index.all? { |idx| other[idx].present? && other[idx][:value] == path[idx][:value] }
+      end
+    end
+
+    filtered.presence || paths
   end
 
   def collection_breadcrumb_url(facet_value, field = nil)
