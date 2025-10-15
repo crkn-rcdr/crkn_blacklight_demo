@@ -9,6 +9,7 @@ class CatalogController < ApplicationController
   # Blacklight's track action is a redirect used for click tracking and may
   # be invoked without an authenticity token. Skip CSRF verification for it.
   skip_before_action :verify_authenticity_token, only: [:track]
+  before_action :ensure_default_catalog_query, only: :index
 
   configure_blacklight do |config|
     # Use the standard select handler
@@ -158,6 +159,26 @@ class CatalogController < ApplicationController
 
     # keep params tidy
     config.filter_search_state_fields = true
+  end
+
+  private def ensure_default_catalog_query
+    return unless request.get?
+    return unless request.format.html?
+
+    query_params = request.query_parameters.deep_dup
+    defaults_added = false
+
+    if query_params['search_field'].blank?
+      query_params['search_field'] = 'all_fields'
+      defaults_added = true
+    end
+
+    unless query_params.key?('q')
+      query_params['q'] = ''
+      defaults_added = true
+    end
+
+    redirect_to search_catalog_path(query_params) if defaults_added
   end
 
   def self.language_code_for(context)
