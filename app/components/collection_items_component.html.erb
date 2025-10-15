@@ -85,40 +85,39 @@ document.addEventListener("DOMContentLoaded", function () {
     <% next unless item['is_issue']&.first == "Yes" %>
     <% ark_value = Array(item['ark']).first.to_s.strip %>
     <% next if ark_value.empty? %>
-  (async function () {
-    const arkId = "<%= ark_value.sub('https://n2t.net/ark:/', '') %>";
-    const manifestUrl = `https://crkn-iiif-api.azurewebsites.net/manifest/${arkId}`;
-    const containerId = "osd-<%= item['id'] %>";
-    const container = document.getElementById(containerId);
-    if (!container) return;
+    (async function () {
+      const arkId = "<%= ark_value.sub('https://n2t.net/ark:/', '') %>";
+      const manifestUrl = `https://crkn-iiif-api.azurewebsites.net/manifest/${arkId}`;
+      const containerId = "osd-<%= item['id'] %>";
+      const container = document.getElementById(containerId);
+      if (!container) return;
 
-    try {
-      const response = await fetch(manifestUrl);
-      const manifest = await response.json();
-      const canvases = manifest.items || [];
-      const tileSources = canvases.map(canvas => {
-        const parts = canvas.id.split('/');
-        const lastTwoParts = parts.slice(-2).join('/');
-        return `https://image-tor.canadiana.ca/iiif/2/${encodeURIComponent(lastTwoParts)}/info.json`;
-      });
+      try {
+        const response = await fetch(manifestUrl);
+        const manifest = await response.json();
+        const canvases = manifest.items || [];
+        const tileSources = canvases.map(canvas => {
+          const parts = canvas.id.split('/');
+          const lastTwoParts = parts.slice(-2).join('/');
+          return `https://image-tor.canadiana.ca/iiif/2/${encodeURIComponent(lastTwoParts)}/info.json`;
+        });
 
-      OpenSeadragon({
-        element: container,
-        prefixUrl: "/assets/",
-        sequenceMode: true,
-        tileSources: tileSources,
-        immediateRender: true,
-        showReferenceStrip: false,
-        showHomeControl: false,
-        showZoomControl: true,
-        showFullPageControl: true
-      });
+        OpenSeadragon({
+          element: container,
+          prefixUrl: "/assets/",
+          sequenceMode: true,
+          tileSources: tileSources,
+          immediateRender: true,
+          showReferenceStrip: false,
+          showHomeControl: false,
+          showZoomControl: true,
+          showFullPageControl: true
+        });
 
-    } catch (e) {
-      console.error("Failed to load manifest or initialize OpenSeadragon for", containerId, e);
-    }
-  })();
+      } catch (e) {
+        console.error("Failed to load manifest or initialize OpenSeadragon for", containerId, e);
+      }
+    })();
   <% end %>
 });
 </script>
-
