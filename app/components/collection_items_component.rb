@@ -11,7 +11,8 @@ class CollectionItemsComponent < ViewComponent::Base
     @response_data = rsolr.get 'select', params: {
       q: "serial_key:#{@documentId}",
       start: start,
-      rows: @per_page
+      rows: @per_page,
+      sort: 'id asc'
     }
 
     @collection_items = @response_data['response']['docs']
