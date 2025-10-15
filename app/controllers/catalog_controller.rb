@@ -62,11 +62,11 @@ class CatalogController < ApplicationController
 
     # Hierarchical Collections facet (uses slash-delimited paths in collectionen_path / collectionfr_path)
     config.add_facet_field 'collectionen_path',
-      label: 'Collections',
+      label:  ->(_c) { I18n.t('blacklight.metadata.collection.label') },
       component: Blacklight::Hierarchy::FacetFieldListComponent,
       if: ->(context, _config, _facet = nil) { CatalogController.language_code_for(context) != 'fr' }
     config.add_facet_field 'collectionfr_path',
-      label: 'Collections',
+      label:  ->(_c) { I18n.t('blacklight.metadata.collection.label') },
       component: Blacklight::Hierarchy::FacetFieldListComponent,
       if: ->(context, _config, _facet = nil) { CatalogController.language_code_for(context) == 'fr' }
     # Tell blacklight-hierarchy how to parse the field into a tree (use slash delimiter)
@@ -77,6 +77,9 @@ class CatalogController < ApplicationController
         'collectionfr' => [['path'], '/']
       }
     }
+    config.add_facet_field 'serial_title_str',
+                           label: ->(_c) { I18n.t('blacklight.metadata.serial_title.label') },
+                           sort: 'count', limit: 8, suggest: true, index_range: true
     
     config.add_facet_field 'is_issue_str',
                            label: ->(_c) { I18n.t('blacklight.metadata.issue_msg.label') },

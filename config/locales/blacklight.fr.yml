@@ -304,6 +304,8 @@ fr:
         label: Période
       all_fields:
         label: Tout
+      serial_title:
+        label: Titre de la série
     sort:
       relevance:
         label: Pertinence

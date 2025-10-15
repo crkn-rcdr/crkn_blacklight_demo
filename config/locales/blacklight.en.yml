@@ -323,6 +323,8 @@ en:
         label: Date Range
       all_fields:
         label: All Fields
+      serial_title:
+        label: Serial Title
     sort:
       relevance:
         label: Relevance

@@ -9,7 +9,11 @@ class CollectionItemsComponent < ViewComponent::Base
     start = (@page - 1) * @per_page
 
     @response_data = rsolr.get 'select', params: {
-      q: "serial_key:#{@documentId},is_issue:Yes",
+      q: '*:*',
+      fq: [
+        "serial_key:#{RSolr.solr_escape(@documentId)}",
+        'is_issue:Yes'
+      ],
       start: start,
       rows: @per_page,
       sort: 'id asc'
