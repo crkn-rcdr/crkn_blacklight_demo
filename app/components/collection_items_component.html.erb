@@ -81,9 +81,12 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  <% @collection_items.each do |item| %>
+  <% Array(@collection_items).each do |item| %>
+    <% next unless item['is_issue']&.first == "Yes" %>
+    <% ark_value = Array(item['ark']).first.to_s.strip %>
+    <% next if ark_value.empty? %>
   (async function () {
-    const arkId = "<%= item['ark'].sub('https://n2t.net/ark:/', '') %>";
+    const arkId = "<%= ark_value.sub('https://n2t.net/ark:/', '') %>";
     const manifestUrl = `https://crkn-iiif-api.azurewebsites.net/manifest/${arkId}`;
     const containerId = "osd-<%= item['id'] %>";
     const container = document.getElementById(containerId);
