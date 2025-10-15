@@ -49,14 +49,9 @@ class MarcIndexer < Blacklight::Marc::Indexer
     end
 
     # --- is_serial: true for parent serials, not individual issues ---
-    to_field "is_serial" do |record, acc|
-      is_issue = record["901"]&.value&.strip&.casecmp("Is issue")&.zero?
-      v = record["902"]&.subfields&.find { |sf| sf.code == 'a' }&.value&.strip
-      if is_issue
-        acc.replace ["No"]
-      else
-        acc.replace [(v&.casecmp("Is part of")&.zero?) ? "Yes" : "No"]
-      end
+    to_field "is_serial" do |record, accumulator|
+      v = record["901"]&.value&.strip
+      accumulator.replace [ (v&.casecmp("Is series")&.zero?) ? "Yes" : "No" ]
     end
 
     to_field 'marc_ss', get_xml
@@ -167,31 +162,20 @@ class MarcIndexer < Blacklight::Marc::Indexer
     # ----------------------------
 
     # Materials facet + collection helpers based on 999 $e (EN) / $f (FR)
-    to_field 'materials_ssim_en' do |rec, acc|
-      acc.replace(materials_by_language(rec)[:en])
-    end
-    to_field 'materials_ssm_en' do |rec, acc|
-      acc.replace(materials_by_language(rec)[:en])
-    end
-    to_field 'materials_ssim_fr' do |rec, acc|
-      acc.replace(materials_by_language(rec)[:fr])
-    end
-    to_field 'materials_ssm_fr' do |rec, acc|
-      acc.replace(materials_by_language(rec)[:fr])
-    end
-
-    # Optional: flat facet of all collection labels (all $e/$f levels)
-    #to_field 'collection_ssim' do |rec, acc|
-    #  vals = []
-    #  rec.fields('999').each do |f|
-    #    collection_segments_by_language(f).each_value do |segments|
-    #      vals.concat(normalize_collection_segments(segments))
-    #    end
-    #  end
-    #  acc.replace(vals.uniq)
+    #to_field 'materials_ssim_en' do |rec, acc|
+    #  acc.replace(materials_by_language(rec)[:en])
+    #end
+    #to_field 'materials_ssm_en' do |rec, acc|
+    #  acc.replace(materials_by_language(rec)[:en])
+    #end
+    #to_field 'materials_ssim_fr' do |rec, acc|
+    #  acc.replace(materials_by_language(rec)[:fr])
+    #end
+    #to_field 'materials_ssm_fr' do |rec, acc|
+    #  acc.replace(materials_by_language(rec)[:fr])
     #end
 
-    # Optional: human-readable path for display/debug (language specific)
+    # human-readable path for display/debug (language specific)
     to_field 'collectionen_path' do |rec, acc|
       collection_paths_by_language(rec)[:en].each do |segments|
         acc.concat(path_permutations(segments))

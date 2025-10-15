@@ -53,31 +53,21 @@ class CatalogController < ApplicationController
     config.add_facet_field 'author_ssm_str',
                            label: ->(_c) { I18n.t('blacklight.metadata.creator.label') },
                            sort: 'count', limit: 8, suggest: true, index_range: true
-    config.add_facet_field 'is_issue_str',
-                           label: ->(_c) { I18n.t('blacklight.metadata.issue_msg.label') },
-                           sort: 'count', limit: 8, suggest: true, index_range: true
-    config.add_facet_field 'is_serial_str',
-                           label: ->(_c) { I18n.t('blacklight.metadata.serial_msg.label') },
-                           sort: 'count', limit: 8, suggest: true, index_range: true
 
     # Materials facet (English values from 999$e)
-    config.add_facet_field 'materials_ssim_en',
-                           label: 'Materials',
-                           sort: 'count', limit: 8, suggest: true, index_range: true
+    #config.add_facet_field 'materials_ssim_en',
+    #                       label: 'Materials',
+    #                       sort: 'count', limit: 8, suggest: true, index_range: true
 
     # Hierarchical Collections facet (uses slash-delimited paths in collectionen_path / collectionfr_path)
-    #config.add_facet_field 'collectionen_path',
-    #                       label: 'Collections',
-    #                       component: Blacklight::Hierarchy::FacetFieldListComponent,
-    #                       sort: 'index'
     config.add_facet_field 'collectionen_path',
       label: 'Collections',
-      component: Blacklight::Hierarchy::FacetFieldListComponent#,
-      #if: ->(context, _config, _facet = nil) { !context.respond_to?(:current_ui_language_code) || context.current_ui_language_code != 'fr' }
+      component: Blacklight::Hierarchy::FacetFieldListComponent,
+      if: ->(context, _config, _facet = nil) { CatalogController.language_code_for(context) != 'fr' }
     config.add_facet_field 'collectionfr_path',
       label: 'Collections',
-      component: Blacklight::Hierarchy::FacetFieldListComponent#,
-      #if: ->(context, _config, _facet = nil) { context.respond_to?(:current_ui_language_code) && context.current_ui_language_code == 'fr' }
+      component: Blacklight::Hierarchy::FacetFieldListComponent,
+      if: ->(context, _config, _facet = nil) { CatalogController.language_code_for(context) == 'fr' }
     # Tell blacklight-hierarchy how to parse the field into a tree (use slash delimiter)
     # key is the field name prefix before the last underscore
     config.facet_display = {
@@ -86,6 +76,13 @@ class CatalogController < ApplicationController
         'collectionfr' => [['path'], '/']
       }
     }
+    
+    config.add_facet_field 'is_issue_str',
+                           label: ->(_c) { I18n.t('blacklight.metadata.issue_msg.label') },
+                           sort: 'count', limit: 8, suggest: true, index_range: true
+    config.add_facet_field 'is_serial_str',
+                           label: ->(_c) { I18n.t('blacklight.metadata.serial_msg.label') },
+                           sort: 'count', limit: 8, suggest: true, index_range: true
 
     # Send facet field list to Solr
     config.add_facet_fields_to_solr_request!
@@ -166,7 +163,23 @@ class CatalogController < ApplicationController
     # keep params tidy
     config.filter_search_state_fields = true
   end
+
+  def self.language_code_for(context)
+    lang =
+      if context.respond_to?(:content_lang) && context.content_lang.present?
+        context.content_lang
+      elsif context.respond_to?(:params) && context.params[:lang].present?
+        context.params[:lang]
+      else
+        I18n.locale.to_s
+      end
+
+    lang.to_s.downcase
+  end
 end
+
+
+
 
 
 

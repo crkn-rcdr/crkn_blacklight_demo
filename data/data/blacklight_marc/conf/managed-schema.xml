@@ -535,10 +535,6 @@
   <field name="tx_hant" type="text_zh_hant" indexed="true" stored="false"/>
 
   <!-- CRKN facets / hierarchy -->
-  <field name="materials_ssim_en" type="strings" indexed="true" stored="true" docValues="true"/>
-  <field name="materials_ssim_fr" type="strings" indexed="true" stored="true" docValues="true"/>
-  <field name="materials_ssm_en" type="text_general" multiValued="true"/>
-  <field name="materials_ssm_fr" type="text_general" multiValued="true"/>
   <field name="collectionen_path" type="strings" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <field name="collectionfr_path" type="strings" indexed="true" stored="true" multiValued="true" docValues="true"/>
 
