@@ -166,94 +166,41 @@ class MarcIndexer < Blacklight::Marc::Indexer
     # CRKN additions
     # ----------------------------
 
-    # Normalize helper (trim, drop trailing period, dedupe)
-    clean_norm = lambda do |rec, acc|
-      acc.map! { |s| s.to_s.strip.sub(/\.\z/, '') }
-      acc.reject!(&:empty?)
-      acc.uniq!
+    # Materials facet + collection helpers based on 999 $e (EN) / $f (FR)
+    to_field 'materials_ssim_en' do |rec, acc|
+      acc.replace(materials_by_language(rec)[:en])
+    end
+    to_field 'materials_ssm_en' do |rec, acc|
+      acc.replace(materials_by_language(rec)[:en])
+    end
+    to_field 'materials_ssim_fr' do |rec, acc|
+      acc.replace(materials_by_language(rec)[:fr])
+    end
+    to_field 'materials_ssm_fr' do |rec, acc|
+      acc.replace(materials_by_language(rec)[:fr])
     end
 
-    # Materials facet: TOP-LEVEL ONLY (999$a)
-    to_field 'materials_ssim', extract_marc('999a'), clean_norm
-    to_field 'materials_ssm',  extract_marc('999a'), clean_norm  # optional display
-
-    # Optional: flat facet of all collection labels (both a and b levels)
+    # Optional: flat facet of all collection labels (all $e/$f levels)
     #to_field 'collection_ssim' do |rec, acc|
     #  vals = []
     #  rec.fields('999').each do |f|
-    #    a = f['a']&.strip
-    #    b = f['b']&.strip
-    #    vals << a if a && !a.empty?
-    #    vals << b if b && !b.empty?
+    #    collection_segments_by_language(f).each_value do |segments|
+    #      vals.concat(normalize_collection_segments(segments))
+    #    end
     #  end
-    #  vals.map! { |s| s.sub(/\.\z/, '') }
     #  acc.replace(vals.uniq)
     #end
 
-    # Optional: human-readable path for display/debug
-    to_field 'collection_path_tsim' do |rec, acc|
-      rec.fields('999').each do |f|
-        a = f['a']&.strip
-        b = f['b']&.strip
-        next unless a && !a.empty?
-        a = a.sub(/\.\z/, '')
-        if b && !b.empty?
-          b = b.sub(/\.\z/, '')
-          acc << "#{a}/#{b}"
-        else
-          acc << a
-        end
-      end
-    end
-
-    # Blacklight-hierarchy: single delimited field with permutations (A, A|B)
-    to_field 'collection_hierarchy_ssim' do |rec, acc|
-      # for each pair of 999 "a|b" where first is EN and second is FR
-      # build hierarchical strings with pipe delimiter `|`
-      # and prefix ONLY the root with an invisible language tag:
-      #   \u2063enSerials|Newspapers
-      #   \u2063frPublications en série|Journaux
-      rec.fields('999').each_with_index do |f, idx|
-        a = f['a']&.strip
-        b = f['b']&.strip
-        next unless a && !a.empty?
-
-        lang_tag = idx.even? ? "\u2063en" : "\u2063fr"  # 1st=EN, 2nd=FR
-        root = "#{lang_tag}#{a}"
-
-        if b && !b.empty?
-          acc << "#{root}|#{b}"
-        else
-          acc << root
-        end
-      end
-    end
-
-    # (Legacy, optional) Hierarchical paths using schema dynamic path types
-    to_field 'collections_descendent_path' do |rec, acc|
-      rec.fields('999').each do |f|
-        a = f['a']&.strip
-        b = f['b']&.strip
-        next unless a && !a.empty?
-        a = a.sub(/\.\z/, '')
-        acc << a
-        acc << "#{a}/#{b.sub(/\.\z/, '')}" if b && !b.empty?
+    # Optional: human-readable path for display/debug (language specific)
+    to_field 'collectionen_path' do |rec, acc|
+      collection_paths_by_language(rec)[:en].each do |segments|
+        acc.concat(path_permutations(segments))
       end
       acc.uniq!
     end
-
-    to_field 'collections_ancestor_path' do |rec, acc|
-      rec.fields('999').each do |f|
-        a = f['a']&.strip
-        b = f['b']&.strip
-        next unless a && !a.empty?
-        a = a.sub(/\.\z/, '')
-        if b && !b.empty?
-          b = b.sub(/\.\z/, '')
-          acc << "#{a}/#{b}"
-        else
-          acc << a
-        end
+    to_field 'collectionfr_path' do |rec, acc|
+      collection_paths_by_language(rec)[:fr].each do |segments|
+        acc.concat(path_permutations(segments))
       end
       acc.uniq!
     end
@@ -361,4 +308,90 @@ class MarcIndexer < Blacklight::Marc::Indexer
 
     to_field 'lc_b4cutter_ssim', extract_marc('050a'), first_only
   end
+
+  private
+
+  FRENCH_KEYWORDS = %w[serie series carte cartes annuelle annuelles periodique periodiques publication publications journaux].freeze
+  ENGLISH_KEYWORDS = %w[serial serials map maps annual annuals periodical periodicals publication publications newspaper newspapers].freeze
+
+  def materials_by_language(record)
+    collection_paths_by_language(record).transform_values do |paths|
+      paths.map(&:first).compact.uniq
+    end
+  end
+
+  def collection_paths_by_language(record)
+    result = { en: [], fr: [] }
+    record.fields('999').each do |field|
+      collection_segments_by_language(field).each do |lang, values|
+        normalized = normalize_collection_segments(values)
+        result[lang] << normalized unless normalized.empty?
+      end
+    end
+    result.transform_values(&:uniq)
+  end
+
+  def collection_segments_by_language(field)
+    segments = { en: [], fr: [] }
+    field.each do |subfield|
+      case subfield.code
+      when 'e'
+        segments[:en] << subfield.value
+      when 'f'
+        segments[:fr] << subfield.value
+      end
+    end
+    segments
+  end
+
+  def normalize_collection_segments(values)
+    Array(values).map { |value| normalize_collection_value(value) }.reject(&:blank?)
+  end
+
+  def normalize_collection_value(value)
+    value.to_s.strip.sub(/\.\z/, '')
+  end
+
+  def path_permutations(segments)
+    values = []
+    current = nil
+    segments.each do |segment|
+      current = current ? "#{current}/#{segment}" : segment
+      values << current
+    end
+    values
+  end
+
+  def detect_language_code(str)
+    return nil if str.blank?
+
+    downcased  = str.downcase
+    normalized = strip_diacritics(downcased)
+
+    return 'fr' unless downcased.ascii_only?
+    return 'fr' if normalized.include?('en serie') || normalized.include?('publications en serie')
+    return 'fr' if FRENCH_KEYWORDS.any? { |word| normalized.include?(word) }
+    return 'eng' if ENGLISH_KEYWORDS.any? { |word| normalized.include?(word) }
+
+    nil
+  end
+
+  def opposite_language_code(code)
+    return nil if code.nil?
+    code == 'fr' ? 'eng' : (code == 'eng' ? 'fr' : nil)
+  end
+
+  def strip_diacritics(str)
+    return '' if str.blank?
+
+    if str.respond_to?(:unicode_normalize)
+      str.unicode_normalize(:nfd).gsub(/\p{Mn}/, '')
+    else
+      ActiveSupport::Inflector.transliterate(str)
+    end
+  end
 end
+
+
+
+

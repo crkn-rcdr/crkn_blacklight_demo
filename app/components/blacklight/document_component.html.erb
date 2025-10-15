@@ -28,7 +28,7 @@
                     <% if active %>
                       <span><%= segment[:label] %></span>
                     <% else %>
-                      <%= link_to segment[:label], helpers.collection_breadcrumb_url(segment[:value]) %>
+                      <%= link_to segment[:label], helpers.collection_breadcrumb_url(segment[:value], segment[:field]) %>
                     <% end %>
                   </li>
                 <% end %>

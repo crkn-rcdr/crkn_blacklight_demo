@@ -4,63 +4,105 @@
 class CollectionsHierarchyComponent < Blacklight::Hierarchy::FacetFieldListComponent
   class << self
     def strip_language_prefix(value)
-      return value unless value.respond_to?(:to_s)
-
       cleaned = value.to_s.sub(/\A[\p{Cf}\s]+/, '')
-      cleaned.sub(/\A(fr|en)(?=[A-Z])/, '')
+      cleaned.split('/').last.to_s
     end
   end
 
-  def tree
-    t = super
-    return t unless t.is_a?(Hash)
-
-    filter_top_level(t)
+  def render?
+    return false unless field_visible_for_current_language?
+    super
   end
 
   private
 
-  def filter_top_level(subtree)
-    filtered = {}
+  def tree
+    @tree ||= build_tree(items)
+  end
 
-    subtree.each do |key, value|
-      if key.is_a?(String)
-        filtered[key] = value if show_node_for_current_language?(key, value)
-      else
-        filtered[key] = value
+  def field_visible_for_current_language?
+    suffix = language_suffix
+    return true if suffix.nil?
+
+    current = preferred_language_code
+    (suffix == :fr && current == :fr) || (suffix == :en && current == :en)
+  end
+
+  def build_tree(items)
+    tree = {}
+    sorted = items.sort_by { |item| path_segments(facet_value(item)).length }
+
+    sorted.each do |item|
+      parts = path_segments(facet_value(item))
+      next if parts.empty?
+
+      current = tree
+      parts.each_with_index do |part, idx|
+        current[part] ||= {}
+        node = current[part]
+        node[:_] = item if idx == parts.length - 1
+        current = node
       end
     end
 
-    filtered
+    tree
   end
 
-  def language
-    if helpers.respond_to?(:content_lang)
-      helpers.content_lang.presence || 'en'
+  def items
+    return @items if defined?(@items)
+
+    raw_items =
+      if instance_variable_defined?(:@facet_field) && @facet_field&.respond_to?(:items)
+        @facet_field.items
+      elsif respond_to?(:facet_field) && (facet_field_value = facet_field).respond_to?(:items)
+        facet_field_value.items
+      elsif instance_variable_defined?(:@field_config) && @field_config.respond_to?(:items)
+        @field_config.items
+      elsif instance_variable_defined?(:@field_config) && @field_config.respond_to?(:[])
+        @field_config[:items]
+      end
+
+    @items = Array(raw_items || [])
+  end
+
+  def language_suffix
+    name = @field_name.to_s
+    return :fr if name.match?(/(^|_)fr(_|$)/i)
+    return :en if name.match?(/(^|_)en(_|$)/i)
+
+    nil
+  end
+
+  def preferred_language_code
+    lang =
+      if helpers.respond_to?(:current_ui_language_code)
+        helpers.current_ui_language_code
+      elsif helpers.respond_to?(:content_lang)
+        helpers.content_lang
+      end
+
+    lang = helpers.params[:lang] if lang.blank? && helpers.respond_to?(:params)
+    lang = I18n.locale.to_s if lang.blank?
+
+    lang.to_s.start_with?('fr') ? :fr : :en
+  end
+
+  def facet_value(item)
+    return '' if item.nil?
+
+    if item.respond_to?(:value)
+      item.value.to_s
+    elsif item.respond_to?(:[]) && item[:value]
+      item[:value].to_s
+    elsif item.is_a?(Array)
+      item.first.to_s
     else
-      helpers.params[:lang].presence || I18n.locale.to_s
+      item.to_s
     end
   end
 
-  def show_node_for_current_language?(key, node)
-    label = node.fetch(:_, nil)&.respond_to?(:value) ? node[:_].value : key
-    prefix = language_prefix_for(label)
-    return true if prefix.nil?
-
-    prefix == preferred_language_prefix
-  end
-
-  def preferred_language_prefix
-    # Source data prefixes "fr" values for English labels and "en" for French labels.
-    language == 'fr' ? 'en' : 'fr'
-  end
-
-  def language_prefix_for(label)
-    return nil unless label.respond_to?(:to_s)
-
-    stripped = label.to_s.sub(/\A[\p{Cf}\s]+/, '')
-    match = stripped.match(/\A(fr|en)(?=[A-Z])/)
-    match && match[1]
+  def path_segments(value)
+    value.to_s.split('/').map { |part| part.to_s.strip }.reject(&:blank?)
   end
 
   class NodeComponent < Blacklight::Hierarchy::FacetFieldComponent
@@ -138,3 +180,5 @@ class CollectionsHierarchyComponent < Blacklight::Hierarchy::FacetFieldListCompo
     end
   end
 end
+
+

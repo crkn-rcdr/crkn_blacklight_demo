@@ -46,14 +46,18 @@ module ApplicationHelper
     content_tag :p, "#{value_str}".html_safe, dir: 'ltr'
   end
   def format_facet(args)
-    field = args[:field].to_s
-    args[:document][args[:field]].map! do |value|
+    field_name = args[:field].to_s
+    facet_param = facet_param_name(field_name)
+
+    values = Array(args[:document][args[:field]])
+    linked_values = values.map do |value|
       escaped_value = CGI.escape(value.to_s)
-      "<a href=\"/catalog?f%5B#{field}_str%5D%5B%5D=#{escaped_value}&q=&search_field=all_fields\">#{value}</a>"
+      "<a href=\"/catalog?f%5B#{facet_param}%5D%5B%5D=#{escaped_value}&q=&search_field=all_fields\">#{value}</a>"
     end
-    value_str = Array(args[:document][args[:field]]).join('<br/>')
+
+    value_str = linked_values.join('<br/>')
     value_str.sub!(/<br\/>$/, '')
-    content_tag :p, "#{value_str}".html_safe, dir: 'ltr'
+    content_tag :p, value_str.html_safe, dir: 'ltr'
   end
   def format_date(args)
     Time.parse(args[:document][args[:field]].to_s).strftime("%Y-%m-%d")
@@ -63,25 +67,22 @@ module ApplicationHelper
 
   # Build language-aware collection breadcrumbs from hierarchy facet values.
   def collection_breadcrumb_paths(document)
-    values = Array(document['collection_hierarchy_ssim']).compact
-    return [] if values.empty?
+    field, values = collection_hierarchy_values(document)
+    return [] if values.blank?
 
-    lang = current_ui_language_code
-    preferred = values.select { |val| hierarchy_value_language(val) == lang }
-    preferred = values if preferred.empty?
+    values.filter_map do |value|
+      parts = value.to_s.split('/').map { |part| part.to_s.strip }.reject(&:blank?)
+      next if parts.empty?
 
-    preferred.map do |value|
-      parts = value.split('|')
       parts.each_index.map do |idx|
-        raw_segment = parts[idx]
-        label = idx.zero? ? CollectionsHierarchyComponent.strip_language_prefix(parts.first) : raw_segment
-        { label: label.to_s.strip, value: parts[0..idx].join('|') }
+        { label: parts[idx], value: parts[0..idx].join('/'), field: field }
       end
     end
   end
 
-  def collection_breadcrumb_url(facet_value)
-    params_hash = { 'f[collection_hierarchy_ssim][]' => facet_value }
+  def collection_breadcrumb_url(facet_value, field = nil)
+    facet_field = field || collection_hierarchy_facet_field
+    params_hash = { "f[#{facet_field}][]" => facet_value }
     lang = current_ui_language_param
     params_hash[:lang] = lang if lang.present?
     search_action_path(params_hash)
@@ -101,12 +102,30 @@ module ApplicationHelper
     current_ui_language_param.to_s.start_with?('fr') ? 'fr' : 'en'
   end
 
-  def hierarchy_value_language(value)
-    first = value.to_s.split('|').first
-    return nil unless first
+  def collection_hierarchy_facet_field
+    current_ui_language_code == 'fr' ? 'collectionfr_path' : 'collectionen_path'
+  end
 
-    stripped = first.sub(/\A[\p{Cf}\s]+/, '')
-    match = stripped.match(/\A(fr|en)/i)
-    match && match[1].downcase
+  def collection_hierarchy_values(document)
+    primary_field = collection_hierarchy_facet_field
+    values = Array(document[primary_field]).compact
+    return [primary_field, values] if values.present?
+
+    fallback_field = primary_field == 'collectionen_path' ? 'collectionfr_path' : 'collectionen_path'
+    [fallback_field, Array(document[fallback_field]).compact]
+  end
+
+  def facet_param_name(field_name)
+    return field_name if field_name.end_with?('_str')
+
+    case field_name
+    when 'materials_ssim_en', 'materials_ssim_fr',
+         'collectionen_path', 'collectionfr_path'
+      field_name
+    else
+      "#{field_name}_str"
+    end
   end
 end
+
+
