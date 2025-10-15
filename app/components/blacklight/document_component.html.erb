@@ -22,6 +22,7 @@
           <nav class="collection-breadcrumbs mb-3" aria-label="<%= t('breadcrumbs.collections', default: 'Collections') %>">
             <% breadcrumb_paths.each do |path| %>
               <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/catalog"><%= t('labels.L_SEARCH_BREADCRUMB') %></a></li>
                 <% path.each_with_index do |segment, idx| %>
                   <% active = (idx == path.length - 1) %>
                   <li class="breadcrumb-item <%= 'active' if active %>">
@@ -29,6 +30,11 @@
                                 helpers.collection_breadcrumb_url(segment[:value], segment[:field]),
                                 aria: (active ? { current: 'page' } : {}) %>
                   </li>
+                <% end %>
+                <% if @document._source['is_issue']&.first == "Yes" && @document._source['serial_title'] %>
+                  <li class="breadcrumb-item">
+                    <a href="/catalog/<%= @document._source['serial_key'][0] %>"><%= @document._source['serial_title'][0] %></a>
+                  </li> 
                 <% end %>
               </ol>
             <% end %>

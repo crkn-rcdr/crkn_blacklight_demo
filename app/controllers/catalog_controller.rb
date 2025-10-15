@@ -94,8 +94,6 @@ class CatalogController < ApplicationController
     config.add_index_field 'published_ssm', label: ->(_f, _c) { I18n.t('blacklight.metadata.published.label') }
     config.add_index_field 'pub_date_si', label: ->(_f, _c) { I18n.t('blacklight.metadata.date.label') }
     config.add_index_field 'subject_ssim', label: ->(_f, _c) { I18n.t('blacklight.metadata.subject.label') }, helper_method: :format_facet
-    # Show top-level materials instead of legacy collection_tsim
-    config.add_index_field 'materials_ssim_en', label: ->(_f, _c) { I18n.t('blacklight.metadata.material.label') }, helper_method: :format_facet
     config.add_index_field 'depositor_tsim', label: ->(_f, _c) { I18n.t('blacklight.metadata.depositor.label') }, helper_method: :format_facet
     config.add_index_field 'language_ssim', label: ->(_f, _c) { I18n.t('blacklight.metadata.language.label') }, helper_method: :format_facet
     config.add_index_field 'notes_tsim', label: ->(_f, _c) { I18n.t('blacklight.metadata.notes.label') }, helper_method: :format_text
@@ -112,8 +110,6 @@ class CatalogController < ApplicationController
     config.add_show_field 'published_ssm', label: ->(_f, _c) { I18n.t('blacklight.metadata.published.label') }
     config.add_show_field 'pub_date_si', label: ->(_f, _c) { I18n.t('blacklight.metadata.date.label') }
     config.add_show_field 'subject_ssim', label: ->(_f, _c) { I18n.t('blacklight.metadata.subject.label') }, helper_method: :format_facet
-    # Show materials (top-level) instead of legacy collection_tsim
-    config.add_show_field 'materials_ssim_en', label: ->(_f, _c) { I18n.t('blacklight.metadata.material.label') }, helper_method: :format_facet
     config.add_show_field 'depositor_tsim', label: ->(_f, _c) { I18n.t('blacklight.metadata.depositor.label') }, helper_method: :format_facet
     config.add_show_field 'language_ssim', label: ->(_f, _c) { I18n.t('blacklight.metadata.language.label') }, helper_method: :format_facet
     config.add_show_field 'notes_tsim', label: ->(_f, _c) { I18n.t('blacklight.metadata.notes.label') }, helper_method: :format_text
