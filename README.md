@@ -14,6 +14,12 @@ Blacklight and Blacklight Marc depend on an apache solr Search Engine. For more 
 
 This repo is configured to pull and run solr through docker compose, and has the data folder mapped as a volume, which will allow the solr index to be created automatically for you, and will persist the information in the index for development or production needs.
 
+Generate a master key:
+
+`ruby -rsecurerandom -e 'puts SecureRandom.hex(64)'`
+
+Save that key to ./config/master.key
+
 For CRKN in production, we are using a solr instance running independantly from this docker compose. To configure the Solr instance to work with the Blacklight container, I sshed onto the Solr server, and performed the following:
 
 `sudo cat /home/bitnami/bitnami_credentials`
